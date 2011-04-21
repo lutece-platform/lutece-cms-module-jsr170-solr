@@ -33,23 +33,22 @@
  */
 package fr.paris.lutece.plugins.jsr170.modules.solr.business;
 
-import java.io.IOException;
-import java.util.Collection;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
-
 import fr.paris.lutece.plugins.jcr.business.INodeAction;
 import fr.paris.lutece.plugins.jcr.business.IRepositoryFile;
 import fr.paris.lutece.plugins.jcr.business.IRepositoryFileDAO;
 import fr.paris.lutece.plugins.jcr.business.RepositoryFileHome;
 import fr.paris.lutece.plugins.jcr.business.admin.AdminWorkspace;
-import fr.paris.lutece.plugins.jcr.service.search.JcrIndexer;
 import fr.paris.lutece.plugins.jsr170.modules.solr.indexer.SolrJcrIndexer;
 import fr.paris.lutece.plugins.search.solr.indexer.SolrIndexerService;
 import fr.paris.lutece.plugins.search.solr.indexer.SolrItem;
-import fr.paris.lutece.plugins.search.solr.util.SolrConstants;
 import fr.paris.lutece.portal.service.spring.SpringContextService;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
+
+import java.io.IOException;
+
+import java.util.Collection;
 
 
 /**
@@ -58,18 +57,17 @@ import fr.paris.lutece.portal.service.spring.SpringContextService;
  */
 public class SolrRepositoryFileHome extends RepositoryFileHome
 {
+    private static SolrRepositoryFileHome _singletonSolr;
     private SolrJcrIndexer _solrJcrIndexer = (SolrJcrIndexer) SpringContextService.getBean( 
             "jsr170-solr.solrDocIndexer" );
 
-    private static SolrRepositoryFileHome _singletonSolr;
-    
     /**
      * Returns the instance of the singleton
      * @return The instance of the singleton
      */
     public static SolrRepositoryFileHome getSolrInstance(  )
     {
-    	SolrRepositoryFileHome singleton = _singletonSolr;
+        SolrRepositoryFileHome singleton = _singletonSolr;
 
         if ( singleton == null )
         {
@@ -79,6 +77,7 @@ public class SolrRepositoryFileHome extends RepositoryFileHome
 
         return singleton;
     }
+
     /**
     * @param <T> the type of result elements
     * @param <L> the collection type
@@ -97,9 +96,12 @@ public class SolrRepositoryFileHome extends RepositoryFileHome
         {
             try
             {
-            	SolrItem solrItem = _solrJcrIndexer.luceneDocument2SolrItem( result );
-            	modifySolrItemUid( solrItem );
-                SolrIndexerService.write( solrItem );
+                SolrItem solrItem = _solrJcrIndexer.luceneDocument2SolrItem( result );
+
+                if ( ( solrItem != null ) && ( solrItem.getContent(  ) != null ) )
+                {
+                    SolrIndexerService.write( solrItem );
+                }
             }
             catch ( CorruptIndexException e )
             {
@@ -121,9 +123,12 @@ public class SolrRepositoryFileHome extends RepositoryFileHome
             {
                 try
                 {
-                	SolrItem solrItem = _solrJcrIndexer.luceneDocument2SolrItem( result );
-                	modifySolrItemUid( solrItem );
-                    SolrIndexerService.write( solrItem );
+                    SolrItem solrItem = _solrJcrIndexer.luceneDocument2SolrItem( result );
+
+                    if ( ( solrItem != null ) && ( solrItem.getContent(  ) != null ) )
+                    {
+                        SolrIndexerService.write( solrItem );
+                    }
                 }
                 catch ( CorruptIndexException e )
                 {
@@ -140,22 +145,5 @@ public class SolrRepositoryFileHome extends RepositoryFileHome
                 doRecursive( adminWorkspace, file, action );
             }
         }
-    }
-    
-    private void modifySolrItemUid( SolrItem item )
-    {
-    	if( item == null )
-    	{
-    		return;
-    	}
-    	
-    	String strUid = item.getUid();
-    	
-    	// Remove the suffix
-    	if( strUid != null && strUid.endsWith( SolrConstants.CONSTANT_UNDERSCORE + JcrIndexer.SHORT_NAME ) )
-    	{
-    		int nIndex = strUid.lastIndexOf( SolrConstants.CONSTANT_UNDERSCORE );
-    		item.setUid( strUid.substring( 0, nIndex ) );
-    	}
     }
 }

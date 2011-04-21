@@ -33,21 +33,6 @@
  */
 package fr.paris.lutece.plugins.jsr170.modules.solr.indexer;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.springframework.beans.BeansException;
-import org.springframework.dao.DataAccessException;
-
 import fr.paris.lutece.plugins.jcr.authentication.JsrUser;
 import fr.paris.lutece.plugins.jcr.business.admin.AdminJcrHome;
 import fr.paris.lutece.plugins.jcr.business.admin.AdminView;
@@ -74,6 +59,26 @@ import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.search.SearchItem;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+
+import org.apache.commons.io.IOUtils;
+
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.Document;
+
+import org.springframework.beans.BeansException;
+
+import org.springframework.dao.DataAccessException;
+
+import java.io.IOException;
+import java.io.Reader;
+
+import java.text.ParseException;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -122,14 +127,16 @@ public class SolrJcrIndexer implements SolrIndexer
         _mapActions.put( SearchItem.FIELD_CONTENTS,
             new ISolrItemBuilder(  )
             {
-                public void action( org.apache.lucene.document.Field field, SolrItem item ) throws IOException
+                public void action( org.apache.lucene.document.Field field, SolrItem item )
+                    throws IOException
                 {
-                	Reader content = field.readerValue();
-                	if( content != null )
-                	{
-                		String strContent = new String(IOUtils.toByteArray( content ));
-                		item.setContent( strContent );
-                	}
+                    Reader content = field.readerValue(  );
+
+                    if ( content != null )
+                    {
+                        String strContent = new String( IOUtils.toByteArray( content ) );
+                        item.setContent( strContent );
+                    }
                 }
             } );
         _mapActions.put( SearchItem.FIELD_DATE,
@@ -300,7 +307,7 @@ public class SolrJcrIndexer implements SolrIndexer
 
                 try
                 {
-                    SolrRepositoryFileHome.getSolrInstance()
+                    SolrRepositoryFileHome.getSolrInstance(  )
                                           .doRecursive( adminWorkspace, view, view.getPath(  ),
                         new IndexerNodeAction( documentComparator, JcrPlugin.PLUGIN_NAME, adminWorkspace, strRole ),
                         new JsrUser( adminWorkspace.getUser(  ) ) );
@@ -361,16 +368,18 @@ public class SolrJcrIndexer implements SolrIndexer
             org.apache.lucene.document.Field field = (org.apache.lucene.document.Field) object;
 
             ISolrItemBuilder builder = _mapActions.get( field.name(  ) );
+
             // Add the field into the SolrItem object
             try
-			{
-				builder.action( field, item );
-			}
-			catch ( IOException e )
-			{
-				AppLogService.error( e.getMessage(  ), e );
-				return null;
-			}
+            {
+                builder.action( field, item );
+            }
+            catch ( IOException e )
+            {
+                AppLogService.error( e.getMessage(  ), e );
+
+                return null;
+            }
 
             // Add Solr specific attribute
             item.setSite( _strSite );
@@ -423,8 +432,20 @@ public class SolrJcrIndexer implements SolrIndexer
         return sb.toString(  );
     }
 
+    /**
+     *
+     * ISolrItemBuilder
+     *
+     */
     private interface ISolrItemBuilder
     {
-        public void action( org.apache.lucene.document.Field field, SolrItem item ) throws IOException;
+        /**
+         * Fill the {@link SolrItem} object with the {@link org.apache.lucene.document.Field} object
+         * @param field the Field object
+         * @param item the SolrItem to fill
+         * @throws IOException
+         */
+        public void action( org.apache.lucene.document.Field field, SolrItem item )
+            throws IOException;
     }
 }
