@@ -47,6 +47,7 @@ import fr.paris.lutece.plugins.jcr.util.JcrIndexerUtils;
 import fr.paris.lutece.plugins.jsr170.modules.solr.business.SolrRepositoryFileHome;
 import fr.paris.lutece.plugins.search.solr.business.field.Field;
 import fr.paris.lutece.plugins.search.solr.indexer.SolrIndexer;
+import fr.paris.lutece.plugins.search.solr.indexer.SolrIndexerService;
 import fr.paris.lutece.plugins.search.solr.indexer.SolrItem;
 import fr.paris.lutece.plugins.search.solr.util.SolrConstants;
 import fr.paris.lutece.portal.business.page.Page;
@@ -96,23 +97,12 @@ public class SolrJcrIndexer implements SolrIndexer
     private static final List<String> LIST_RESSOURCES_NAME = new ArrayList<String>(  );
 
     // Site name
-    private static final String PROPERTY_SITE = "lutece.name";
-    private static final String PROPERTY_PROD_URL = "lutece.prod.url";
     private static JcrIndexer _indexer = new JcrIndexer(  );
     private static Map<String, ISolrItemBuilder> _mapActions = new HashMap<String, ISolrItemBuilder>(  );
-    private String _strSite;
-    private String _strProdUrl;
 
     public SolrJcrIndexer(  )
     {
         super(  );
-        _strSite = AppPropertiesService.getProperty( PROPERTY_SITE );
-        _strProdUrl = AppPropertiesService.getProperty( PROPERTY_PROD_URL );
-
-        if ( !_strProdUrl.endsWith( "/" ) )
-        {
-            _strProdUrl = _strProdUrl + "/";
-        }
 
         LIST_RESSOURCES_NAME.add( JcrIndexerUtils.CONSTANT_TYPE_RESOURCE );
 
@@ -382,7 +372,7 @@ public class SolrJcrIndexer implements SolrIndexer
             }
 
             // Add Solr specific attribute
-            item.setSite( _strSite );
+            item.setSite( SolrIndexerService.getWebAppName(  ) );
         }
 
         return item;
