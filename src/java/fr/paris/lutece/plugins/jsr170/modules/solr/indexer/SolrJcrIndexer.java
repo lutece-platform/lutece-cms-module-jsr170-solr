@@ -33,6 +33,19 @@
  */
 package fr.paris.lutece.plugins.jsr170.modules.solr.indexer;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.Document;
+
 import fr.paris.lutece.plugins.jcr.authentication.JsrUser;
 import fr.paris.lutece.plugins.jcr.business.admin.AdminJcrHome;
 import fr.paris.lutece.plugins.jcr.business.admin.AdminView;
@@ -54,32 +67,11 @@ import fr.paris.lutece.portal.business.page.Page;
 import fr.paris.lutece.portal.business.page.PageHome;
 import fr.paris.lutece.portal.business.portlet.Portlet;
 import fr.paris.lutece.portal.business.portlet.PortletTypeHome;
-import fr.paris.lutece.portal.service.message.SiteMessageException;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.search.SearchItem;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
-
-import org.apache.commons.io.IOUtils;
-
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-
-import org.springframework.beans.BeansException;
-
-import org.springframework.dao.DataAccessException;
-
-import java.io.IOException;
-import java.io.Reader;
-
-import java.text.ParseException;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -95,7 +87,8 @@ public class SolrJcrIndexer implements SolrIndexer
     private static final String PROPERTY_MIME_TYPE_LABEL = "jsr170-solr.indexer.mimeType.label";
     private static final String PROPERTY_MIME_TYPE_DESCRIPTION = "jsr170-solr.indexer.mimeType.description";
     private static final List<String> LIST_RESSOURCES_NAME = new ArrayList<String>(  );
-
+    private static final String JCR_INDEXATION_ERROR = "[SolrJcrIndexer] An error occured during the indexation of the portlet number ";
+    
     // Site name
     private static JcrIndexer _indexer = new JcrIndexer(  );
     private static Map<String, ISolrItemBuilder> _mapActions = new HashMap<String, ISolrItemBuilder>(  );
@@ -245,7 +238,7 @@ public class SolrJcrIndexer implements SolrIndexer
     /**
      * {@inheritDoc}
      */
-    public void indexDocuments(  ) throws IOException, InterruptedException, SiteMessageException
+    public List<String> indexDocuments(  )
     {
         Plugin plugin = PluginService.getPlugin( JcrPlugin.PLUGIN_NAME );
 
@@ -277,6 +270,7 @@ public class SolrJcrIndexer implements SolrIndexer
         int defaultView;
         AdminView view;
         String strRole;
+        List<String> lstErrors = new ArrayList<String>(  );
 
         for ( Portlet portlet : Jsr170PortletHome.findByType( PortletTypeHome.getPortletTypeId( 
                     Jsr170PortletHome.class.getName(  ) ) ) )
@@ -302,16 +296,15 @@ public class SolrJcrIndexer implements SolrIndexer
                         new IndexerNodeAction( documentComparator, JcrPlugin.PLUGIN_NAME, adminWorkspace, strRole ),
                         new JsrUser( adminWorkspace.getUser(  ) ) );
                 }
-                catch ( BeansException e )
+                catch ( Exception e )
                 {
-                    AppLogService.error( e.getMessage(  ), e );
-                }
-                catch ( DataAccessException e )
-                {
-                    AppLogService.error( e.getMessage(  ), e );
+                	lstErrors.add( SolrIndexerService.buildErrorMessage( e ) );
+    				AppLogService.error( JCR_INDEXATION_ERROR + portlet.getId(  ), e );
                 }
             }
         }
+
+        return lstErrors;
     }
 
     /**
